@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import 'express-async-errors';
 import express, { NextFunction, Request, Response } from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -350,6 +351,15 @@ app.patch('/api/admin/leaves/:id', ...admin, async (req, res) => {
     await conn.commit();
     res.json({ ok: true });
   } catch (e) { await conn.rollback(); throw e; } finally { conn.release(); }
+});
+
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+app.get('*', (req, res, next) => {
+  if (req.path === '/api' || req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+    if (err) next(err);
+  });
 });
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
