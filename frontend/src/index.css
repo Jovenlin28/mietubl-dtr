@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 25% 97%; --foreground: 215 30% 12%; --card: 0 0% 100%;
+    --primary: 174 70% 24%; --primary-foreground: 0 0% 100%;
+    --muted: 210 20% 93%; --muted-foreground: 215 14% 40%; --border: 214 20% 87%; --destructive: 0 70% 45%;
+  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  .tnum { font-variant-numeric: tabular-nums; }
+}
+
+@layer components {
+  .data-table-wrap {
+    @apply overflow-x-auto rounded-lg border bg-card;
+  }
+  .data-table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .data-table thead {
+    @apply bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground;
+  }
+  .data-table th {
+    @apply whitespace-nowrap px-4 py-3 font-semibold;
+  }
+  .data-table tbody tr {
+    @apply border-t transition-colors hover:bg-muted/40;
+  }
+  .data-table td {
+    @apply px-4 py-3 align-top;
+  }
+}
