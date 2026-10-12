@@ -5,14 +5,18 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const TimeLogs = lazy(() => import('./TimeLogs'));
 const Leaves = lazy(() => import('./Leaves'));
+const LeaveCategories = lazy(() => import('./LeaveCategories'));
 const Employees = lazy(() => import('./Employees'));
 const Dashboard = lazy(() => import('./Dashboard'));
+const Payroll = lazy(() => import('./Payroll'));
 
 const tabs = [
   { to: 'dashboard', label: 'Dashboard' },
   { to: 'time-logs', label: 'Time records' },
   { to: 'leaves', label: 'Leave requests' },
+  { to: 'leave-categories', label: 'Leave categories' },
   { to: 'employees', label: 'Employees' },
+  { to: 'payroll', label: 'Payroll' },
 ];
 
 export default function Admin() {
@@ -31,7 +35,9 @@ export default function Admin() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="time-logs" element={<TimeLogs />} />
           <Route path="leaves" element={<Leaves />} />
+          <Route path="leave-categories" element={<LeaveCategories />} />
           <Route path="employees" element={<Employees />} />
+          <Route path="payroll" element={<Payroll />} />
           <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Routes>
       </Suspense>

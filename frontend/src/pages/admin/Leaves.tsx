@@ -9,6 +9,7 @@ import { fmtDay, fmtTime } from '@/lib/utils';
 interface LeaveRequest {
   id: number;
   name: string;
+  category: string;
   start_date: string;
   end_date: string;
   reason: string | null;
@@ -72,7 +73,7 @@ export default function Leaves() {
         <table className="data-table min-w-[900px]">
           <thead>
             <tr>
-              <th scope="col">Employee</th><th scope="col">Leave From</th><th scope="col">Leave to</th>
+              <th scope="col">Employee</th><th scope="col">Leave category</th><th scope="col">Leave From</th><th scope="col">Leave to</th>
               <th scope="col">Reason</th><th scope="col">Date filed</th><th scope="col">Status</th><th scope="col">Actions</th>
             </tr>
           </thead>
@@ -80,6 +81,7 @@ export default function Leaves() {
             {rows.map((request) => (
               <tr key={request.id}>
                 <td className="whitespace-nowrap font-medium">{request.name}</td>
+                <td>{request.category}</td>
                 <td className="whitespace-nowrap">{fmtDay(request.start_date)}</td>
                 <td className="whitespace-nowrap">{fmtDay(request.end_date)}</td>
                 <td className="max-w-xs">{request.reason || '—'}</td>
@@ -95,8 +97,8 @@ export default function Leaves() {
                 </td>
               </tr>
             ))}
-            {!loading && !rows.length && <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">No leave requests to review.</td></tr>}
-            {loading && <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">Loading leave requests…</td></tr>}
+            {!loading && !rows.length && <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">No leave requests to review.</td></tr>}
+            {loading && <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Loading leave requests…</td></tr>}
           </tbody>
         </table>
         <PaginationFooter

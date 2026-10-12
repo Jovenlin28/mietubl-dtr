@@ -16,6 +16,7 @@ Tables are created automatically on first start. Config lives in `backend/.env`.
 ## Notes
 - **OTP**: in development the code is shown on the login screen and printed in the API console. For production set `NODE_ENV=production` and `SMTP_*` for email; phone/SMS needs a provider wired into `backend/src/otp.ts`.
 - **Admins**: emails/phones listed in `ADMIN_IDENTIFIERS` become admins when they register.
-- **Leave**: 25 credits each for vacation and sick leave; credits are deducted when an admin approves.
+- **Leave**: admins manage leave categories and annual credits; credits are deducted when an admin approves a request.
+- **Payroll**: admins can configure compensation references and prepare draft payroll runs; employees can view approved payslips. Earnings and deductions are manually entered; review [the payroll guide](./docs/payroll.md), including its Philippine payroll limitations, before use.
 - **Location**: browser GPS is reverse-geocoded on the server (OpenStreetMap Nominatim) and stored with the client IP.
 - Rotate the DB password and `JWT_SECRET` before deploying; `.env` is git-ignored.

@@ -10,7 +10,7 @@ type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 interface RecentLeaveRequest {
   id: number;
   name: string;
-  category: 'vacation' | 'sick';
+  category: string;
   start_date: string;
   end_date: string;
   status: LeaveStatus;
@@ -26,6 +26,16 @@ interface DashboardData {
   recentLeaveRequests: RecentLeaveRequest[];
 }
 
+interface TodayAttendance {
+  id: number;
+  name: string;
+  log_date: string;
+  time_in: string | null;
+  time_out: string | null;
+  edited: number;
+  edit_reason: string | null;
+}
+
 const metrics = [
   { key: 'employeeCount', label: 'Employees', description: 'Active employee accounts', icon: Users, color: 'bg-slate-100 text-slate-700' },
   { key: 'presentToday', label: 'Present today', description: 'Employees who have clocked in', icon: UserCheck, color: 'bg-emerald-100 text-emerald-700' },
@@ -35,11 +45,15 @@ const metrics = [
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData>();
+  const [attendances, setAttendances] = useState<TodayAttendance[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api<DashboardData>('/admin/dashboard')
       .then(setData)
+      .catch((e) => setError(e.message));
+    api<TodayAttendance[]>('/admin/dashboard/attendances')
+      .then(setAttendances)
       .catch((e) => setError(e.message));
   }, []);
 
@@ -71,6 +85,42 @@ export default function Dashboard() {
           </Card>
         ))}
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Today’s attendances</CardTitle>
+          <p className="mt-1 text-sm text-muted-foreground">Employee time logs for {todayLabel}.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="data-table-wrap">
+            <table className="data-table min-w-[680px]">
+              <thead>
+                <tr>
+                  <th scope="col">Employee</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Time in</th>
+                  <th scope="col">Time out</th>
+                  <th scope="col">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendances.map((attendance) => (
+                  <tr key={attendance.id}>
+                    <td className="whitespace-nowrap font-medium">{attendance.name}</td>
+                    <td className="whitespace-nowrap">{fmtDay(attendance.log_date)}</td>
+                    <td className="whitespace-nowrap tabular-nums">{fmtTime(attendance.time_in)}</td>
+                    <td className="whitespace-nowrap tabular-nums">{fmtTime(attendance.time_out)}</td>
+                    <td>{attendance.edited ? `Edited${attendance.edit_reason ? `: ${attendance.edit_reason}` : ''}` : '—'}</td>
+                  </tr>
+                ))}
+                {!attendances.length && (
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">No time logs recorded today.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
