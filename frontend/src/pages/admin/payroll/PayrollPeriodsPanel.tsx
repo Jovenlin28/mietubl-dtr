@@ -80,20 +80,18 @@ export function PayrollPeriodsPanel({
                     <td>
                       <div className="flex items-center justify-end gap-2">
                         <Button type="button" variant="outline" size="sm" onClick={() => onSelectRun(run.id)}>Review</Button>
-                        {run.status === 'draft' && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            aria-label={`Delete draft period ${run.periodStart} to ${run.periodEnd}`}
-                            title="Delete draft period"
-                            disabled={busy}
-                            onClick={() => onDeletePeriod(run)}
-                          >
-                            <Trash2 size={15} />
-                          </Button>
-                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          aria-label={`Delete payroll period ${run.periodStart} to ${run.periodEnd}`}
+                          title="Delete payroll period"
+                          disabled={busy}
+                          onClick={() => onDeletePeriod(run)}
+                        >
+                          <Trash2 size={15} />
+                        </Button>
                       </div>
                     </td>
                   </tr>

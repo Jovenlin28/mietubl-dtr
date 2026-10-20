@@ -26,6 +26,7 @@ const schema = [
     email VARCHAR(190) UNIQUE NULL,
     phone VARCHAR(30) UNIQUE NULL,
     role ENUM('employee','admin') NOT NULL DEFAULT 'employee',
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
   `CREATE TABLE IF NOT EXISTS time_logs (
@@ -180,7 +181,7 @@ export async function initDb() {
     `INSERT IGNORE INTO leave_balances (user_id, category_id, credits)
      SELECT u.id, c.id, c.credits_per_year
      FROM users u CROSS JOIN leave_categories c
-     WHERE u.role='employee' AND c.status='active'`);
+     WHERE u.role='employee' AND u.is_active=1 AND c.status='active'`);
 
   const [leaveRequestColumns]: any = await pool.query('SHOW COLUMNS FROM leave_requests');
   const leaveRequestColumnNames = new Set(
@@ -320,6 +321,9 @@ export async function initDb() {
   }
   if (!existingColumns.has('profile_picture')) {
     await pool.query('ALTER TABLE users ADD COLUMN profile_picture MEDIUMTEXT NULL');
+  }
+  if (!existingColumns.has('is_active')) {
+    await pool.query('ALTER TABLE users ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1');
   }
 
   for (const user of [

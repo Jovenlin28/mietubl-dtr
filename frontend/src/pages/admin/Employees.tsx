@@ -81,7 +81,7 @@ export default function Employees() {
       <ConfirmationModal
         open={Boolean(employeeToDelete)}
         title="Delete employee?"
-        description={`Delete ${employeeToDelete?.username ?? 'this employee'}? Their time logs and leave data will also be deleted.`}
+        description={`Remove ${employeeToDelete?.username ?? 'this employee'} from active accounts? They will lose access, while payroll, time logs, leave data, and other historical records are preserved.`}
         confirmLabel="Delete employee"
         destructive
         busy={Boolean(deletingId)}

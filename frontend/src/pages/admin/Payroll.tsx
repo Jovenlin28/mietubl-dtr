@@ -213,10 +213,9 @@ export default function Payroll() {
   };
 
   const deletePeriod = (run: PayrollRun) => {
-    if (run.status !== 'draft') return;
     setConfirmation({
-      title: 'Delete draft payroll period?',
-      description: `Delete ${run.periodStart} – ${run.periodEnd}? Its pay lines will also be permanently deleted.`,
+      title: 'Delete payroll period?',
+      description: `Permanently delete ${run.periodStart} – ${run.periodEnd}, including its pay lines? This deletes the period regardless of status, including approved or paid.`,
       confirmLabel: 'Delete period',
       destructive: true,
       action: async () => {
@@ -226,7 +225,7 @@ export default function Payroll() {
           setSelectedRunId(undefined);
           setDetail(undefined);
         }
-        setNotice('Draft payroll period deleted.');
+        setNotice('Payroll period deleted.');
       },
     });
   };

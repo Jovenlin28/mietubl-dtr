@@ -33,7 +33,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     password: z.string().min(1).max(128),
   }).parse(req.body);
   const [rows]: any = await pool.query(
-    'SELECT id, name, username, email, phone, password, role, profile_picture AS profilePicture FROM users WHERE username=?',
+    'SELECT id, name, username, email, phone, password, role, profile_picture AS profilePicture FROM users WHERE username=? AND is_active=1',
     [username]);
   const user = rows[0];
   if (!user || !user.password || !verifyPassword(password, user.password)) {
@@ -269,7 +269,7 @@ app.post('/api/admin/leave-categories', ...admin, async (req, res) => {
       [category.name, category.creditsPerYear, category.status]);
     await conn.query(
       `INSERT INTO leave_balances (user_id, category_id, credits)
-       SELECT id, ?, ? FROM users WHERE role='employee'`,
+       SELECT id, ?, ? FROM users WHERE role='employee' AND is_active=1`,
       [result.insertId, category.creditsPerYear]);
     await conn.commit();
     res.status(201).json({ id: result.insertId, ...category });
@@ -301,7 +301,7 @@ app.put('/api/admin/leave-categories/:id', ...admin, async (req, res) => {
       [category.name, category.creditsPerYear, category.status, categoryId]);
     await conn.query(
       `INSERT IGNORE INTO leave_balances (user_id, category_id, credits)
-       SELECT id, ?, ? FROM users WHERE role='employee'`,
+       SELECT id, ?, ? FROM users WHERE role='employee' AND is_active=1`,
       [categoryId, category.creditsPerYear]);
     await conn.commit();
     res.json({ id: categoryId, ...category });
@@ -375,16 +375,16 @@ async function invalidateAllDraftPayrollAttendance(conn: any) {
 app.get('/api/admin/dashboard', ...admin, async (_req, res) => {
   const today = fmtDate();
   const [[employeeRows], [presentRows], [leaveRows], [pendingRows], [recentLeaves]]: any = await Promise.all([
-    pool.query("SELECT COUNT(*) total FROM users WHERE role='employee'"),
+    pool.query("SELECT COUNT(*) total FROM users WHERE role='employee' AND is_active=1"),
     pool.query(
       `SELECT COUNT(DISTINCT u.id) total
        FROM users u JOIN time_logs t ON t.user_id=u.id
-       WHERE u.role='employee' AND t.log_date=? AND t.time_in IS NOT NULL`,
+       WHERE u.role='employee' AND u.is_active=1 AND t.log_date=? AND t.time_in IS NOT NULL`,
       [today]),
     pool.query(
       `SELECT COUNT(DISTINCT u.id) total
        FROM users u JOIN leave_requests l ON l.user_id=u.id
-       WHERE u.role='employee' AND l.status='approved' AND l.start_date<=? AND l.end_date>=?`,
+       WHERE u.role='employee' AND u.is_active=1 AND l.status='approved' AND l.start_date<=? AND l.end_date>=?`,
       [today, today]),
     pool.query("SELECT COUNT(*) total FROM leave_requests WHERE status='pending'"),
     pool.query(
@@ -404,7 +404,7 @@ app.get('/api/admin/dashboard', ...admin, async (_req, res) => {
   });
 });
 app.get('/api/admin/users', ...admin, async (_req, res) => {
-  const [rows] = await pool.query('SELECT id, name, username, email, phone, role, created_at FROM users ORDER BY name');
+  const [rows] = await pool.query('SELECT id, name, username, email, phone, role, created_at FROM users WHERE is_active=1 ORDER BY name');
   res.json(rows);
 });
 const userFields = {
@@ -505,17 +505,7 @@ app.delete('/api/admin/users/:id', ...admin, async (req, res) => {
       }
     }
 
-    const [payroll]: any = await connection.query(
-      `SELECT (SELECT COUNT(*) FROM payroll_profiles WHERE user_id=?) +
-        (SELECT COUNT(*) FROM payroll_items WHERE user_id=?) +
-        (SELECT COUNT(*) FROM payroll_runs WHERE created_by=? OR approved_by=?) AS total`,
-      [req.params.id, req.params.id, req.params.id, req.params.id]);
-    if (Number(payroll[0].total) > 0) {
-      await connection.rollback();
-      return res.status(409).json({ error: 'This account is linked to payroll history and cannot be deleted. Keep the account to preserve the audit trail.' });
-    }
-
-    await connection.query('DELETE FROM users WHERE id=?', [req.params.id]);
+    await connection.query('UPDATE users SET is_active=0 WHERE id=?', [req.params.id]);
     await connection.commit();
     res.json({ ok: true });
   } catch (error) {
@@ -574,7 +564,7 @@ app.get('/api/admin/dashboard/attendances', ...admin, async (_req, res) => {
   const [rows] = await pool.query(
     `SELECT t.id, u.name, t.log_date, t.time_in, t.time_out, t.edited, t.edit_reason
      FROM time_logs t JOIN users u ON u.id=t.user_id
-     WHERE u.role='employee' AND t.log_date=?
+     WHERE u.role='employee' AND u.is_active=1 AND t.log_date=?
      ORDER BY u.name`,
     [today]);
   res.json(rows);
@@ -666,7 +656,7 @@ app.get('/api/admin/payroll/employees', ...admin, async (_req, res) => {
   const [rows] = await pool.query(
     `SELECT u.id, u.name, p.pay_basis AS payBasis, p.pay_rate AS payRate
      FROM users u LEFT JOIN payroll_profiles p ON p.user_id=u.id
-     WHERE u.role='employee' ORDER BY u.name`);
+     WHERE u.role='employee' AND u.is_active=1 ORDER BY u.name`);
   res.json(rows);
 });
 
@@ -682,7 +672,7 @@ app.put('/api/admin/payroll/employees/bulk', ...admin, async (req, res) => {
     await conn.beginTransaction();
     const placeholders = employeeIds.map(() => '?').join(',');
     const [employees]: any = await conn.query(
-      `SELECT id FROM users WHERE role='employee' AND id IN (${placeholders}) FOR UPDATE`,
+      `SELECT id FROM users WHERE role='employee' AND is_active=1 AND id IN (${placeholders}) FOR UPDATE`,
       employeeIds);
     if (employees.length !== employeeIds.length) {
       await conn.rollback();
@@ -706,7 +696,8 @@ app.put('/api/admin/payroll/employees/bulk', ...admin, async (req, res) => {
 app.put('/api/admin/payroll/employees/:id', ...admin, async (req, res) => {
   const userId = z.coerce.number().int().positive().parse(req.params.id);
   const profile = payrollProfileSchema.parse(req.body);
-  const [employees]: any = await pool.query("SELECT id FROM users WHERE id=? AND role='employee'", [userId]);
+  const [employees]: any = await pool.query(
+    "SELECT id FROM users WHERE id=? AND role='employee' AND is_active=1", [userId]);
   if (!employees.length) return res.status(404).json({ error: 'Employee not found.' });
   await pool.query(
     `INSERT INTO payroll_profiles (user_id, pay_basis, pay_rate) VALUES (?,?,?)
@@ -752,7 +743,7 @@ app.post('/api/admin/payroll/months', ...admin, async (req, res) => {
     const [employeeRows]: any = await conn.query(
       `SELECT u.id, u.name, p.pay_basis AS payBasis, p.pay_rate AS payRate
        FROM users u LEFT JOIN payroll_profiles p ON p.user_id=u.id
-       WHERE u.role='employee' ORDER BY u.id`);
+       WHERE u.role='employee' AND u.is_active=1 ORDER BY u.id`);
     const runIds: number[] = [];
     for (const period of periods) {
       const configuredPayDay = period.half === 1 ? settings.firstPayDay : settings.secondPayDay;
@@ -811,14 +802,10 @@ app.delete('/api/admin/payroll/runs/:id', ...admin, async (req, res) => {
   try {
     await conn.beginTransaction();
     const [runs]: any = await conn.query(
-      'SELECT status FROM payroll_runs WHERE id=? FOR UPDATE', [runId]);
+      'SELECT id FROM payroll_runs WHERE id=? FOR UPDATE', [runId]);
     if (!runs[0]) {
       await conn.rollback();
       return res.status(404).json({ error: 'Payroll period not found.' });
-    }
-    if (runs[0].status !== 'draft') {
-      await conn.rollback();
-      return res.status(409).json({ error: 'Only draft payroll periods can be deleted.' });
     }
     await conn.query('DELETE FROM payroll_runs WHERE id=?', [runId]);
     await conn.commit();
